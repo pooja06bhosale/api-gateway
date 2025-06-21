@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: optional:configserver:http://localhost:8085
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+jwt:
+  secret: myJwtSecretKey123456
+
+redis:
+  host: localhost
+  port: 6379
+
+cloud:
+  gateway:
+    routes:
+      - id: customer-service
+        uri: lb://CUSTOMER-SERVICE
+        predicates:
+          - Path=/customers/**
+        filters:
+          - name: RequestHeaderToRequestUri
+            args:
+              name: Authorization
+          - name: RequestRateLimiter
+            args:
+              redis-rate-limiter.replenishRate: 5
+              redis-rate-limiter.burstCapacity: 10
+              redis-rate-limiter.key-resolver: "#{T(org.springframework.cloud.gateway.support.ServletUtils).resolveUserAgent(request)}"
+          - name: JwtAuthenticationFilter
+
+      - id: policy-service
+        uri: lb://POLICY-SERVICE
+        predicates:
+          - Path=/policies/**
+        filters:
+          - name: RequestRateLimiter
+            args:
+              redis-rate-limiter.replenishRate: 5
+              redis-rate-limiter.burstCapacity: 10
+              redis-rate-limiter.requestedTokens: 1
+
+      - id: claim-service
+        uri: lb://CLAIM-SERVICE
+        predicates:
+          - Path=/claims/**
+
+      - id: payment-service
+        uri: lb://PAYMENT-SERVICE
+        predicates:
+          - Path=/payments/**
+
+      - id: notification-service
+        uri: lb://NOTIFICATION-SERVICE
+        predicates:
+          - Path=/notifications/**
+
+      - id: auth-service
+        uri: lb://AUTH-SERVICE
+        predicates:
+          - Path=/auth/**
+
+      - id: hospital-network-service
+        uri: lb://HOSPITAL-NETWORK-SERVICE
+        predicates:
+          - Path=/hospitals/**
+
+      - id: premium-calculator-service
+        uri: lb://PREMIUM-CALCULATOR-SERVICE
+        predicates:
+          - Path=/premiums/**
+
+      - id: document-upload-service
+        uri: lb://DOCUMENT-UPLOAD-SERVICE
+        predicates:
+          - Path=/documents/**
+
+      - id: reporting-service
+        uri: lb://REPORTING-SERVICE
+        predicates:
+          - Path=/reports/**
